@@ -97,18 +97,19 @@ The app is configured to serve both the UI and the API through a Vercel Python s
 - `/` -> frontend
 - `/download` -> media download route
 
-## Example deployment settings
+## Vercel function settings
 
 ```json
 {
   "functions": {
     "api/**/*.py": {
-      "runtime": "python3.12",
       "maxDuration": 300
     }
   }
 }
 ```
+
+Python is auto-detected from the function under `api/`; do not set `runtime: "python3.12"` here. Vercel's `runtime` property expects a versioned runtime identifier, not a Python version.
 
 ## Known limitations
 
