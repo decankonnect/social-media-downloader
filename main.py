@@ -1,30 +1,41 @@
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 import yt_dlp
 from dotenv import load_dotenv
 
-app = FastAPI()
-INDEX_FILE = os.path.join(os.path.dirname(__file__), "index.html")
-
-# Load environment variables from .env file
 load_dotenv()
 
-# CORS configuration
-app.add_middleware(CORSMiddleware,
-    allow_origins=[os.getenv("ALLOWED_ORIGIN")],  # Adjust this to your needs
+PROJECT_ROOT = Path(__file__).resolve().parent
+INDEX_FILE = PROJECT_ROOT / "index.html"
+
+
+def get_allowed_origins() -> list[str]:
+    configured = os.getenv("ALLOWED_ORIGIN", "*")
+    origins = [origin.strip() for origin in configured.split(",") if origin.strip()]
+    if not origins or origins == ["*"]:
+        return ["*"]
+    return origins
+
+
+app = FastAPI(title="Social Media Downloader", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/download")
+@app.api_route("/download", methods=["GET", "HEAD"])
 def download_video(
     url: str = Query(..., min_length=1),
     format: str = Query("best", min_length=1, max_length=200),
@@ -77,7 +88,7 @@ def download_video(
             detail=f"yt-dlp could not download this video: {e}",
         ) from e
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return FileResponse(INDEX_FILE)
 
